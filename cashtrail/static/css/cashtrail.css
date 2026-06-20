@@ -1,0 +1,94 @@
+/* ============================================================
+   CashTrail  –  Custom Stylesheet  v2.1
+   ============================================================ */
+
+/* ── Global: NEVER underline text inside buttons/links-as-buttons ── */
+a, button, .btn-ct, .btn-ct-outline, .ct-nav-item, .mob-nav a,
+.dropdown-item, .lp-links a, .footer-link, .nav-link {
+    text-decoration: none !important;
+}
+a:hover { text-decoration: none !important; }
+
+/* ── Counter animation ── */
+@keyframes countUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.s-val { animation: countUp .55s ease forwards; }
+
+/* ── Skeleton loader ── */
+.skeleton {
+  background: linear-gradient(90deg,var(--ct-border) 25%,rgba(255,255,255,.3) 50%,var(--ct-border) 75%);
+  background-size: 200% 100%; animation: skel 1.5s infinite; border-radius: 8px;
+}
+@keyframes skel { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── Hover lift ── */
+.hover-lift { transition: transform .2s, box-shadow .2s; }
+.hover-lift:hover { transform: translateY(-3px); box-shadow: var(--ct-shadow-md) !important; }
+
+/* ── Sidebar thin scrollbar ── */
+.ct-sidebar { scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.08) transparent; }
+.ct-sidebar::-webkit-scrollbar { width:3px; }
+.ct-sidebar::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:4px; }
+
+/* ── Receipt preview ── */
+.receipt-preview { max-height:110px; border-radius:10px; border:1px solid var(--ct-border); object-fit:cover; margin-top:8px; }
+
+/* ── Tags pill selector ── */
+.tag-pill-wrap { display:flex; flex-wrap:wrap; gap:6px; padding:8px 0; }
+.tag-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px;
+  font-size:12.5px; font-weight:600; cursor:pointer; transition:all .18s;
+  border:1.5px solid var(--ct-border); background:var(--ct-card); color:var(--ct-muted); }
+.tag-pill:hover { border-color:var(--ct-primary); color:var(--ct-primary); }
+.tag-pill.selected { background:var(--ct-primary); border-color:var(--ct-primary); color:#fff; }
+.tag-pill input[type=checkbox] { display:none; }
+
+/* ── Equal-height stat cards ── */
+.analytics-stat-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+.analytics-stat-row .ct-card {
+  flex:1; min-width:160px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:22px 18px; text-align:center; min-height:110px;
+}
+
+/* ── Section header ── */
+.sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.sec-head h5 { margin:0; font-weight:700; font-size:15px; }
+.sec-head a  { font-size:12.5px; color:var(--ct-primary); font-weight:600; }
+
+/* ── AI output formatting ── */
+.ai-output { line-height:1.8; font-size:14px; }
+.ai-output h2 { font-size:17px; font-weight:700; margin:22px 0 10px; color:var(--ct-primary); }
+.ai-output h3 { font-size:15px; font-weight:700; margin:16px 0 8px; }
+.ai-output strong { font-weight:700; }
+.ai-output ul, .ai-output ol { padding-left:20px; }
+.ai-output li { margin-bottom:5px; }
+.ai-output p  { margin-bottom:10px; }
+.ai-output table { width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; }
+.ai-output table th { background:rgba(124,58,237,.07); padding:8px 12px; text-align:left; font-weight:700; border:1px solid var(--ct-border); }
+.ai-output table td { padding:8px 12px; border:1px solid var(--ct-border); }
+
+/* ── Trend badges ── */
+.trend-up   { color:#10B981; background:rgba(16,185,129,.1);  border-radius:6px; padding:2px 8px; font-size:11.5px; font-weight:700; }
+.trend-down { color:#EF4444; background:rgba(239,68,68,.1);   border-radius:6px; padding:2px 8px; font-size:11.5px; font-weight:700; }
+
+/* ── Gradient text ── */
+.grad-text { background:linear-gradient(135deg,#7C3AED,#06B6D4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+/* ── Empty state ── */
+.empty-state { text-align:center; padding:56px 24px; color:var(--ct-muted); }
+.empty-state .ei { font-size:56px; margin-bottom:14px; display:block; }
+.empty-state .et { font-size:17px; font-weight:700; color:var(--ct-text); margin-bottom:8px; }
+.empty-state .ed { font-size:13.5px; margin-bottom:22px; }
+
+/* ── Report tabs ── */
+.rpt-tab-bar { display:flex; gap:4px; background:var(--ct-surface); border-radius:12px; padding:4px; margin-bottom:20px; }
+.rpt-tab { flex:1; text-align:center; padding:9px; border:none; border-radius:9px;
+  font-size:13px; font-weight:600; color:var(--ct-muted); cursor:pointer;
+  background:transparent; transition:all .18s; }
+.rpt-tab.active { background:var(--ct-card); color:var(--ct-primary); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+
+/* ── Print ── */
+@media print {
+  .ct-sidebar,.ct-topbar,.mob-nav,.btn-ct,.btn-ct-outline { display:none!important; }
+  .ct-main { margin-left:0!important; }
+  .ct-card { box-shadow:none!important; border:1px solid #ddd!important; }
+}

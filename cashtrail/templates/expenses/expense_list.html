@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Expenses{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+{% block content %}
+
+<!-- Filter bar -->
+<div class="ct-card p-3 mb-4">
+  <form method="get">
+    <div class="row g-2 align-items-center">
+      <div class="col-sm-6 col-md-3">{{ filter_form.search }}</div>
+      <div class="col-sm-6 col-md-2">{{ filter_form.category }}</div>
+      <div class="col-sm-6 col-md-2">{{ filter_form.payment_method }}</div>
+      <div class="col-sm-6 col-md-2">{{ filter_form.start_date }}</div>
+      <div class="col-sm-6 col-md-2">{{ filter_form.end_date }}</div>
+      <div class="col-sm-6 col-md-1 d-flex gap-1">
+        <button type="submit" class="btn-ct btn-ct-primary" style="padding:9px 14px;flex:1" title="Search"><i class="bi bi-search"></i></button>
+        <a href="{% url 'expense_list' %}" class="btn-ct-outline" style="padding:9px 12px" title="Clear"><i class="bi bi-x-lg"></i></a>
+      </div>
+    </div>
+    <div class="row g-2 mt-1">
+      <div class="col-sm-4 col-md-2">{{ filter_form.tag }}</div>
+      <div class="col-sm-4 col-md-2">{{ filter_form.min_amount }}</div>
+      <div class="col-sm-4 col-md-2">{{ filter_form.max_amount }}</div>
+    </div>
+  </form>
+</div>
+
+<!-- Summary bar -->
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <span style="font-size:13px;color:var(--ct-muted)">{{ expenses.paginator.count }} expense{{ expenses.paginator.count|pluralize }}</span>
+    <span class="amt-exp" style="font-size:15px">Total: {{ currency }}{{ total|floatformat:2 }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'export_csv' %}" class="btn-ct-outline" style="font-size:12.5px"><i class="bi bi-download me-1"></i>Export CSV</a>
+    <a href="{% url 'add_transaction' %}" class="btn-ct btn-ct-primary" style="font-size:12.5px"><i class="bi bi-plus me-1"></i>Add Expense</a>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="ct-card">
+  {% if expenses %}
+  <div class="table-responsive">
+    <table class="ct-table w-100">
+      <thead>
+        <tr>
+          <th>Title</th><th>Category</th><th>Tags</th>
+          <th>Date</th><th>Method</th>
+          <th class="text-end">Amount</th><th style="width:70px"></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for exp in expenses %}
+      <tr>
+        <td>
+          <a href="{% url 'expense_detail' exp.id %}" style="color:var(--ct-text);text-decoration:none;font-weight:600;display:block">{{ exp.title }}</a>
+          {% if exp.notes %}<div style="font-size:11px;color:var(--ct-muted);margin-top:1px">{{ exp.notes|truncatechars:38 }}</div>{% endif %}
+        </td>
+        <td>
+          {% if exp.category %}
+          <span class="ct-badge" style="background:{{ exp.category.color }}20;color:{{ exp.category.color }}">{{ exp.category.icon }} {{ exp.category.name }}</span>
+          {% else %}<span style="color:var(--ct-muted)">—</span>{% endif %}
+        </td>
+        <td>{% for tag in exp.tags.all %}<span class="ct-badge me-1" style="background:{{ tag.color }}18;color:{{ tag.color }};font-size:11px">{{ tag.name }}</span>{% endfor %}</td>
+        <td style="font-size:12.5px;color:var(--ct-muted);white-space:nowrap">{{ exp.date|date:"M d, Y" }}</td>
+        <td style="font-size:12px;color:var(--ct-muted)">{{ exp.get_payment_method_display }}</td>
+        <td class="text-end amt-exp">-{{ currency }}{{ exp.amount }}</td>
+        <td>
+          <div class="d-flex gap-1 justify-content-end">
+            <a href="{% url 'edit_expense' exp.id %}" class="btn-ct-outline" style="padding:5px 9px;font-size:12px" title="Edit"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'delete_expense' exp.id %}" class="btn-ct btn-ct-danger" style="padding:5px 9px;font-size:12px" title="Delete"><i class="bi bi-trash"></i></a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination -->
+  {% if expenses.has_other_pages %}
+  <div class="d-flex justify-content-center p-4">
+    <nav><ul class="pagination pagination-sm mb-0 gap-1">
+      {% if expenses.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ expenses.previous_page_number }}" style="border-radius:8px;border:1.5px solid var(--ct-border)">‹</a></li>
+      {% endif %}
+      {% for p in expenses.paginator.page_range %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ p }}" style="border-radius:8px;{% if expenses.number == p %}background:var(--ct-primary);border-color:var(--ct-primary);color:#fff{% else %}border:1.5px solid var(--ct-border){% endif %}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      {% if expenses.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ expenses.next_page_number }}" style="border-radius:8px;border:1.5px solid var(--ct-border)">›</a></li>
+      {% endif %}
+    </ul></nav>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">
+    <span class="ei">📭</span>
+    <div class="et">No expenses found</div>
+    <div class="ed">Try adjusting your filters or add your first expense.</div>
+    <a href="{% url 'add_transaction' %}" class="btn-ct btn-ct-primary">Add Expense</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

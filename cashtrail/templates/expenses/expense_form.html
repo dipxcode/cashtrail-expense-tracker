@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block extra_css %}
+<style>
+.tags-checkbox-group { display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;list-style:none;margin:0; }
+.tags-checkbox-group li { list-style:none; }
+.tags-checkbox-group label { display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12.5px;font-weight:600;border:1.5px solid var(--ct-border);cursor:pointer;transition:all .18s;background:var(--ct-card);color:var(--ct-text); }
+.tags-checkbox-group input[type=checkbox] { display:none; }
+.tag-checked { background:var(--ct-primary) !important;color:#fff !important;border-color:var(--ct-primary) !important; }
+</style>
+{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-8">
+<div class="ct-card p-4">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#EF4444,#DC2626);display:flex;align-items:center;justify-content:center;font-size:20px">💸</div>
+    <div><div style="font-size:16px;font-weight:700">{{ title }}</div><div style="font-size:12.5px;color:var(--ct-muted)">Fill in the expense details below</div></div>
+  </div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-12"><label class="form-label">Title *</label>{{ form.title }}</div>
+      <div class="col-sm-6"><label class="form-label">Amount ({{ request.user.get_currency_symbol }}) *</label>{{ form.amount }}</div>
+      <div class="col-sm-6"><label class="form-label">Date *</label>{{ form.date }}</div>
+      <div class="col-sm-6">
+        <label class="form-label">Category</label>{{ form.category }}
+        <a href="{% url 'categories' %}" style="font-size:11.5px;color:var(--ct-primary);text-decoration:none;display:block;margin-top:3px">+ Manage categories</a>
+      </div>
+      <div class="col-sm-6"><label class="form-label">Payment Method</label>{{ form.payment_method }}</div>
+      <div class="col-12">
+        <label class="form-label">Tags <span style="color:var(--ct-muted);font-weight:400">(select any)</span></label>
+        {% if form.tags.field.queryset.exists %}
+        {{ form.tags }}
+        {% else %}
+        <div style="padding:10px 14px;background:var(--ct-surface);border-radius:9px;font-size:13px;color:var(--ct-muted)">
+          No tags yet. <a href="{% url 'categories' %}?tab=tags" style="color:var(--ct-primary);text-decoration:none;font-weight:600">Create tags →</a>
+        </div>
+        {% endif %}
+        <a href="{% url 'categories' %}?tab=tags" style="font-size:11.5px;color:var(--ct-primary);text-decoration:none;display:block;margin-top:4px">+ Manage tags</a>
+      </div>
+      <div class="col-12"><label class="form-label">Location (optional)</label>{{ form.location }}</div>
+      <div class="col-12"><label class="form-label">Notes (optional)</label>{{ form.notes }}</div>
+      <div class="col-sm-6">
+        <label class="form-label">Receipt (optional)</label>{{ form.receipt }}
+        {% if expense and expense.receipt %}<img src="{{ expense.receipt.url }}" class="receipt-preview" alt="Receipt">{% endif %}
+      </div>
+      <div class="col-sm-6">
+        <div style="background:var(--ct-surface);border-radius:11px;padding:14px;margin-top:22px">
+          <div class="d-flex align-items-center gap-2 mb-2">{{ form.is_recurring }}<label class="form-label mb-0">Recurring expense?</label></div>
+          {{ form.recurrence }}
+        </div>
+      </div>
+    </div>
+    {% if form.errors %}
+    <div class="alert alert-danger border-0 rounded-3 mt-3 py-2" style="font-size:12.5px">
+      {% for f, errs in form.errors.items %}{% for e in errs %}<div>• {{ f }}: {{ e }}</div>{% endfor %}{% endfor %}
+    </div>
+    {% endif %}
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn-ct btn-ct-danger">{{ action }} Expense</button>
+      <a href="{% url 'expense_list' %}" class="btn-ct-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.tags-checkbox-group li').forEach(li => {
+  const cb = li.querySelector('input[type=checkbox]');
+  const lbl = li.querySelector('label');
+  if (!cb || !lbl) return;
+  const sync = () => lbl.classList.toggle('tag-checked', cb.checked);
+  cb.addEventListener('change', sync); sync();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3 fade-in delay-1">
+    <div class="ct-stat" style="background:linear-gradient(135deg,#7C3AED,#5B21B6)">
+      <div class="s-label">Monthly Expenses</div>
+      <div class="s-val">{{ currency }}{{ monthly_expenses|floatformat:0 }}</div>
+      <div class="s-sub">
+        {% if expense_change > 0 %}<span class="trend-down">▲ {{ currency }}{{ expense_change|floatformat:0 }}</span>
+        {% else %}<span class="trend-up">▼ {{ currency }}{{ expense_change|floatformat:0 }}</span>{% endif %}
+        vs last month
+      </div>
+      <div class="s-ico"><i class="bi bi-arrow-up-circle"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3 fade-in delay-2">
+    <div class="ct-stat" style="background:linear-gradient(135deg,#10B981,#059669)">
+      <div class="s-label">Monthly Income</div>
+      <div class="s-val">{{ currency }}{{ monthly_income|floatformat:0 }}</div>
+      <div class="s-sub"><i class="bi bi-calendar3"></i> This month</div>
+      <div class="s-ico"><i class="bi bi-arrow-down-circle"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3 fade-in delay-3">
+    <div class="ct-stat" style="background:{% if net_savings >= 0 %}linear-gradient(135deg,#06B6D4,#0284C7){% else %}linear-gradient(135deg,#EF4444,#DC2626){% endif %}">
+      <div class="s-label">Net Savings</div>
+      <div class="s-val">{{ currency }}{{ net_savings|floatformat:0 }}</div>
+      <div class="s-sub">{% if net_savings >= 0 %}🎉 Positive cashflow{% else %}⚠️ Over budget{% endif %}</div>
+      <div class="s-ico"><i class="bi bi-piggy-bank"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3 fade-in delay-4">
+    <div class="ct-stat" style="background:linear-gradient(135deg,#F59E0B,#D97706)">
+      <div class="s-label">Overall Balance</div>
+      <div class="s-val">{{ currency }}{{ overall_balance|floatformat:0 }}</div>
+      <div class="s-sub"><i class="bi bi-bank"></i> All time</div>
+      <div class="s-ico"><i class="bi bi-wallet2"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="ct-card p-4 h-100">
+      <div class="sec-head">
+        <h5>30-Day Spending Trend</h5>
+        <a href="{% url 'analytics' %}">Full Analytics →</a>
+      </div>
+      <div style="height:220px"><canvas id="dailyChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="ct-card p-4 h-100">
+      <div class="sec-head">
+        <h5>By Category</h5>
+        <span style="font-size:12px;color:var(--ct-muted)">This month</span>
+      </div>
+      <div style="height:220px;display:flex;align-items:center;justify-content:center">
+        <canvas id="catChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent + Budgets + Goals -->
+<div class="row g-3 mb-3">
+  <!-- Recent Expenses -->
+  <div class="col-lg-7">
+    <div class="ct-card h-100">
+      <div class="p-4 pb-0">
+        <div class="sec-head">
+          <h5>Recent Expenses</h5>
+          <a href="{% url 'expense_list' %}">View All →</a>
+        </div>
+      </div>
+      {% if recent_expenses %}
+      <div class="table-responsive">
+        <table class="ct-table w-100">
+          <thead><tr><th>Title</th><th>Category</th><th>Date</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+          {% for exp in recent_expenses %}
+          <tr>
+            <td><a href="{% url 'expense_detail' exp.id %}" style="color:var(--ct-text);text-decoration:none;font-weight:600">{{ exp.title|truncatechars:28 }}</a></td>
+            <td>{% if exp.category %}<span class="ct-badge" style="background:{{ exp.category.color }}20;color:{{ exp.category.color }}">{{ exp.category.icon }} {{ exp.category.name }}</span>{% else %}—{% endif %}</td>
+            <td style="font-size:12px;color:var(--ct-muted)">{{ exp.date|date:"M d" }}</td>
+            <td class="text-end amt-exp">-{{ currency }}{{ exp.amount }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:32px">
+        <span class="ei" style="font-size:40px">📝</span>
+        <div class="et" style="font-size:15px">No expenses yet</div>
+        <a href="{% url 'add_transaction' %}" class="btn-ct btn-ct-primary" style="font-size:13px">Add First Expense</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Budgets + Goals stacked -->
+  <div class="col-lg-5">
+    <!-- Budgets -->
+    <div class="ct-card p-4 mb-3">
+      <div class="sec-head">
+        <h5>Budgets</h5>
+        <a href="{% url 'budgets' %}">Manage →</a>
+      </div>
+      {% if budgets %}
+      {% for b in budgets %}
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span style="font-size:13px;font-weight:600">{{ b.category.icon }} {{ b.category.name }}</span>
+          <span style="font-size:11.5px;color:var(--ct-muted)">{{ currency }}{{ b.spent|floatformat:0 }}/{{ currency }}{{ b.amount|floatformat:0 }}</span>
+        </div>
+        <div class="ct-bar">
+          <div class="ct-bar-fill" style="width:{{ b.percentage }}%;background:{% if b.percentage > 85 %}#EF4444{% elif b.percentage > 60 %}#F59E0B{% else %}#10B981{% endif %}"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center;padding:16px;color:var(--ct-muted);font-size:13px">
+        <div style="font-size:28px;margin-bottom:6px">🎯</div>
+        <a href="{% url 'budgets' %}" style="color:var(--ct-primary);font-weight:600;text-decoration:none">Set monthly budgets →</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Savings Goals -->
+    <div class="ct-card p-4">
+      <div class="sec-head">
+        <h5>Savings Goals</h5>
+        <a href="{% url 'savings_goals' %}">All →</a>
+      </div>
+      {% if savings_goals %}
+      {% for g in savings_goals %}
+      <div class="mb-3 d-flex align-items-center gap-2">
+        <span style="font-size:22px">{{ g.icon }}</span>
+        <div style="flex:1">
+          <div class="d-flex justify-content-between">
+            <span style="font-size:13px;font-weight:600">{{ g.title|truncatechars:20 }}</span>
+            <span style="font-size:11.5px;color:var(--ct-muted)">{{ g.percentage|floatformat:0 }}%</span>
+          </div>
+          <div class="ct-bar mt-1">
+            <div class="ct-bar-fill" style="width:{{ g.percentage }}%;background:{{ g.color }}"></div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center;padding:16px;color:var(--ct-muted);font-size:13px">
+        <div style="font-size:28px;margin-bottom:6px">🐷</div>
+        <a href="{% url 'savings_goals' %}" style="color:var(--ct-primary);font-weight:600;text-decoration:none">Create a savings goal →</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Quick actions -->
+<div class="ct-card p-3">
+  <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:12px">Quick Actions</div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'add_transaction' %}"           class="btn-ct btn-ct-danger"   style="font-size:13px"><i class="bi bi-plus me-1"></i>Add Expense</a>
+    <a href="{% url 'add_transaction' %}?type=income" class="btn-ct btn-ct-success" style="font-size:13px"><i class="bi bi-plus me-1"></i>Add Income</a>
+    <a href="{% url 'analytics' %}"                 class="btn-ct-outline"         style="font-size:13px"><i class="bi bi-graph-up-arrow me-1"></i>Analytics</a>
+    <a href="{% url 'ai_insights' %}"               class="btn-ct-outline"         style="font-size:13px"><i class="bi bi-stars me-1"></i>AI Insights</a>
+    <a href="{% url 'reports' %}"                   class="btn-ct-outline"         style="font-size:13px"><i class="bi bi-file-earmark-bar-graph me-1"></i>Reports</a>
+    <a href="{% url 'export_csv' %}"                class="btn-ct-outline"         style="font-size:13px"><i class="bi bi-download me-1"></i>Export CSV</a>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+const dailyData   = {{ daily_data|safe }};
+const catData     = {{ category_data|safe }};
+
+// Daily trend
+new Chart(document.getElementById('dailyChart'), {
+  type: 'line',
+  data: {
+    labels: dailyData.map(d => d.date ? new Date(d.date).toLocaleDateString('en-IN',{month:'short',day:'numeric'}) : ''),
+    datasets: [{
+      label: 'Spending', data: dailyData.map(d => parseFloat(d.total)||0),
+      borderColor: '#7C3AED', backgroundColor: 'rgba(124,58,237,.08)',
+      fill: true, tension: 0.4, pointRadius: 3, pointHoverRadius: 6,
+      pointBackgroundColor: '#7C3AED', borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid:{display:false}, ticks:{font:{size:11},maxRotation:0} },
+      y:{ grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:11},callback:v=>'₹'+v} }
+    }
+  }
+});
+
+// Category donut
+if (catData.length > 0) {
+  new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catData.map(c => (c.category__icon||'')+(c.category__name||'Unknown')),
+      datasets: [{
+        data: catData.map(c => parseFloat(c.total)||0),
+        backgroundColor: catData.map(c => c.category__color||'#7C3AED'),
+        borderWidth: 0, spacing: 3, borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'70%',
+      plugins:{ legend:{position:'bottom',labels:{font:{size:10},padding:8,usePointStyle:true}} }
+    }
+  });
+}
+</script>
+{% endblock %}

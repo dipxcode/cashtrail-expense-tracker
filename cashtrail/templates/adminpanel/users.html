@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Admin — Users{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block content %}
+<div class="ct-card mb-4 p-4">
+  <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+    <input type="text" name="search" value="{{ search }}" placeholder="Search by email or username…" class="form-control" style="max-width:320px">
+    <button type="submit" class="btn btn-ct-primary btn-sm"><i class="bi bi-search me-1"></i>Search</button>
+    {% if search %}<a href="{% url 'admin_users' %}" class="btn btn-sm" style="border:1px solid var(--ct-border);border-radius:10px">Clear</a>{% endif %}
+    <span style="font-size:13px;color:var(--ct-text-muted);margin-left:auto">{{ users.count }} user{{ users.count|pluralize }}</span>
+  </form>
+</div>
+
+<div class="ct-card">
+  <div class="table-responsive">
+    <table class="ct-table w-100">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Currency</th>
+          <th>Expenses</th>
+          <th>Income Records</th>
+          <th>Total Spent</th>
+          <th>Joined</th>
+          <th>Roles</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+      <tr>
+        <td>
+          <div class="d-flex align-items-center gap-3">
+            <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#00D4AA);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">
+              {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">{{ u.get_full_name|default:u.username }}</div>
+              <div style="font-size:12px;color:var(--ct-text-muted)">{{ u.email }}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="ct-badge" style="background:rgba(108,99,255,0.1);color:var(--ct-primary)">{{ u.currency }}</span></td>
+        <td style="font-weight:600">{{ u.expense_count }}</td>
+        <td style="font-weight:600">{{ u.income_count }}</td>
+        <td class="amount-expense">{% if u.total_spent %}₹{{ u.total_spent|floatformat:0 }}{% else %}—{% endif %}</td>
+        <td style="font-size:12px;color:var(--ct-text-muted)">{{ u.date_joined|date:"M d, Y" }}</td>
+        <td>
+          <div class="d-flex gap-1 flex-wrap">
+            {% if u.is_staff %}<span class="ct-badge" style="background:rgba(255,179,71,0.15);color:#FF8C42;font-size:11px">Staff</span>{% endif %}
+            {% if u.is_superuser %}<span class="ct-badge" style="background:rgba(255,107,107,0.1);color:#FF6B6B;font-size:11px">Super</span>{% endif %}
+            {% if u.is_active %}<span class="ct-badge" style="background:rgba(0,212,170,0.1);color:#00B894;font-size:11px">Active</span>
+            {% else %}<span class="ct-badge" style="background:rgba(255,107,107,0.1);color:#FF6B6B;font-size:11px">Inactive</span>{% endif %}
+          </div>
+        </td>
+        <td>
+          <a href="{% url 'admin_user_detail' u.pk %}" class="btn btn-sm" style="border:1px solid var(--ct-border);border-radius:8px;font-size:12px;font-weight:600;padding:4px 12px">
+            View <i class="bi bi-chevron-right"></i>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;padding:48px;color:var(--ct-text-muted)">
+        <div style="font-size:48px;margin-bottom:12px">👤</div>
+        <div style="font-weight:600">No users found</div>
+      </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

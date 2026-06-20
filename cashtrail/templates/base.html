@@ -1,0 +1,479 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CashTrail | {% block title %}Dashboard{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/cashtrail.css' %}">
+    <style>
+        :root {
+            --ct-primary:      #7C3AED;
+            --ct-primary-lt:   #8B5CF6;
+            --ct-secondary:    #06B6D4;
+            --ct-success:      #10B981;
+            --ct-danger:       #EF4444;
+            --ct-warning:      #F59E0B;
+            --ct-surface:      #F5F3FF;
+            --ct-card:         #FFFFFF;
+            --ct-border:       #EDE9FE;
+            --ct-text:         #1E1B4B;
+            --ct-muted:        #6B7280;
+            --ct-sidebar-bg:   #1E1B4B;
+            --ct-sidebar-w:    240px;
+            --ct-topbar-h:     60px;
+            --ct-radius:       14px;
+            --ct-shadow:       0 2px 16px rgba(124,58,237,.07);
+            --ct-shadow-md:    0 6px 28px rgba(124,58,237,.13);
+        }
+        [data-bs-theme="dark"] {
+            --ct-surface:  #0F0E1A;
+            --ct-card:     #1A1831;
+            --ct-border:   #2D2B4E;
+            --ct-text:     #E9E7FF;
+            --ct-muted:    #9491B4;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; font-size: 13.5px; background: var(--ct-surface); color: var(--ct-text); min-height: 100vh; }
+
+        /* ── SIDEBAR ── */
+        .ct-sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0; width: var(--ct-sidebar-w);
+            background: var(--ct-sidebar-bg); z-index: 1040;
+            overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column;
+            transition: transform .3s ease;
+        }
+        .ct-sidebar-brand {
+            padding: 18px 20px 14px;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .ct-brand-icon {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+            background: linear-gradient(135deg, #7C3AED, #06B6D4);
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .ct-brand-name { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -.4px; }
+        .ct-brand-sub  { font-size: 9.5px; color: rgba(255,255,255,.35); letter-spacing: 1.8px; text-transform: uppercase; }
+
+        .ct-nav { padding: 10px 10px; flex: 1; }
+        .ct-nav-section {
+            font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,.28);
+            letter-spacing: 1.6px; text-transform: uppercase;
+            padding: 10px 10px 4px; margin-top: 4px;
+        }
+        .ct-nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 10px;
+            color: rgba(255,255,255,.65); text-decoration: none;
+            font-size: 13px; font-weight: 500;
+            transition: all .18s; margin-bottom: 1px;
+        }
+        .ct-nav-item:hover  { background: rgba(255,255,255,.07); color: #fff; }
+        .ct-nav-item.active { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: #fff; box-shadow: 0 3px 12px rgba(124,58,237,.4); }
+        .ct-nav-item i      { font-size: 16px; width: 20px; flex-shrink: 0; }
+        .ct-nav-badge { margin-left: auto; background: linear-gradient(135deg,#F59E0B,#EF4444); color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 20px; font-weight: 700; }
+        .ct-sidebar-footer { padding: 10px; border-top: 1px solid rgba(255,255,255,.06); }
+
+        /* ── MAIN LAYOUT ── */
+        .ct-main { margin-left: var(--ct-sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+        .ct-topbar {
+            height: var(--ct-topbar-h); background: var(--ct-card);
+            border-bottom: 1px solid var(--ct-border);
+            display: flex; align-items: center; padding: 0 22px; gap: 14px;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .ct-page-title { font-size: 16px; font-weight: 700; flex: 1; }
+        .ct-content { flex: 1; padding: 22px; }
+
+        /* ── CARDS ── */
+        .ct-card { background: var(--ct-card); border: 1px solid var(--ct-border); border-radius: var(--ct-radius); box-shadow: var(--ct-shadow); }
+        .ct-stat {
+            border-radius: var(--ct-radius); padding: 20px 22px;
+            position: relative; overflow: hidden; color: #fff;
+        }
+        .ct-stat .s-label { font-size: 11px; font-weight: 600; opacity: .82; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 6px; }
+        .ct-stat .s-val   { font-size: 26px; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1; }
+        .ct-stat .s-sub   { font-size: 11.5px; margin-top: 8px; opacity: .8; }
+        .ct-stat .s-ico   { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 48px; opacity: .12; }
+
+        /* ── BUTTONS ── */
+        .btn-ct, .btn-ct-outline, a.btn-ct, a.btn-ct-outline,
+        .btn-ct-primary, .btn-ct-success, .btn-ct-danger, .btn-ct-cyan { text-decoration: none !important; }
+        .ct-nav-item, .mob-nav a, .dropdown-item, .lp-links a, .footer-link { text-decoration: none !important; }
+        .btn-ct  { border: none; color: #fff; border-radius: 9px; font-weight: 600; font-size: 13px; padding: 8px 18px; transition: all .2s; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-ct:hover { transform: translateY(-1px); box-shadow: var(--ct-shadow-md); color: #fff; }
+        .btn-ct-primary { background: linear-gradient(135deg,#7C3AED,#5B21B6); }
+        .btn-ct-success { background: linear-gradient(135deg,#10B981,#059669); }
+        .btn-ct-danger  { background: linear-gradient(135deg,#EF4444,#DC2626); }
+        .btn-ct-cyan    { background: linear-gradient(135deg,#06B6D4,#0284C7); }
+        .btn-ct-outline { background: transparent; border: 1.5px solid var(--ct-border); color: var(--ct-text); border-radius: 9px; font-weight: 600; font-size: 13px; padding: 7px 16px; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-ct-outline:hover { border-color: var(--ct-primary); color: var(--ct-primary); }
+
+        /* ── TABLE ── */
+        .ct-table { width: 100%; border-collapse: collapse; }
+        .ct-table th { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ct-muted); padding: 10px 14px; border-bottom: 2px solid var(--ct-border); white-space: nowrap; }
+        .ct-table td { padding: 12px 14px; border-bottom: 1px solid var(--ct-border); font-size: 13px; vertical-align: middle; }
+        .ct-table tr:last-child td { border-bottom: none; }
+        .ct-table tr:hover td { background: rgba(124,58,237,.03); }
+
+        /* ── BADGE ── */
+        .ct-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
+
+        /* ── AMOUNTS ── */
+        .amt-exp { color: #EF4444; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .amt-inc { color: #10B981; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+        /* ── PROGRESS ── */
+        .ct-bar { height: 7px; border-radius: 4px; background: var(--ct-border); overflow: hidden; }
+        .ct-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+
+        /* ── FORMS ── */
+        .form-control, .form-select {
+            border: 1.5px solid var(--ct-border); border-radius: 9px;
+            padding: 9px 13px; font-size: 13px; font-family: 'Inter', sans-serif;
+            background: var(--ct-card); color: var(--ct-text); transition: border-color .2s;
+        }
+        .form-control:focus, .form-select:focus { border-color: var(--ct-primary); box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+        .form-label { font-weight: 600; font-size: 12px; color: var(--ct-text); margin-bottom: 5px; }
+
+        /* ── TOAST ── */
+        .ct-toasts { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+        .ct-toast  { min-width: 280px; padding: 12px 18px; border-radius: 11px; font-size: 13.5px; font-weight: 500; color: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.18); animation: slideInRight .3s ease; }
+        @keyframes slideInRight { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+
+        /* ── SIDEBAR OVERLAY (mobile) ── */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1039; }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .fade-in { animation: fadeUp .45s ease forwards; }
+        .delay-1 { animation-delay:.08s; opacity:0; }
+        .delay-2 { animation-delay:.16s; opacity:0; }
+        .delay-3 { animation-delay:.24s; opacity:0; }
+        .delay-4 { animation-delay:.32s; opacity:0; }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--ct-border); border-radius: 4px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 991.98px) {
+            .ct-sidebar { transform: translateX(-100%); }
+            .ct-sidebar.show { transform: translateX(0); }
+            .ct-main { margin-left: 0; }
+            .ct-content { padding: 14px; }
+        }
+        @media (max-width: 575.98px) {
+            .ct-stat .s-val { font-size: 22px; }
+            .ct-topbar { padding: 0 14px; }
+            .hide-xs { display: none !important; }
+        }
+
+        /* ── MOBILE BOTTOM NAV ── */
+        .mob-nav {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 1050;
+            background: var(--ct-card); border-top: 1px solid var(--ct-border);
+            padding: 6px 0 env(safe-area-inset-bottom, 6px);
+        }
+        .mob-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9.5px; font-weight: 600; color: var(--ct-muted); text-decoration: none; padding: 4px 0; transition: color .2s; }
+        .mob-nav a i { font-size: 19px; }
+        .mob-nav a.active { color: var(--ct-primary); }
+        @media (max-width: 767.98px) { .mob-nav { display: flex; } .ct-content { padding-bottom: 70px !important; } }
+
+        @media print {
+            .ct-sidebar,.ct-topbar,.mob-nav,.btn-ct,.btn-ct-outline { display:none!important; }
+            .ct-main { margin-left:0!important; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<div class="sidebar-overlay" id="sbOverlay" onclick="closeSb()"></div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="ct-sidebar" id="ctSb">
+    <div class="ct-sidebar-brand">
+        <div class="ct-brand-icon">💸</div>
+        <div>
+            <div class="ct-brand-name">CashTrail</div>
+            <div class="ct-brand-sub">Finance OS</div>
+        </div>
+    </div>
+
+    <nav class="ct-nav">
+        <div class="ct-nav-section">Overview</div>
+        <a href="{% url 'dashboard' %}"   class="ct-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-house-door"></i> Dashboard
+        </a>
+
+        <div class="ct-nav-section">Transactions</div>
+        <a href="{% url 'expense_list' %}" class="ct-nav-item {% if 'expense' in request.resolver_match.url_name and request.resolver_match.url_name != 'add_expense' %}active{% endif %}">
+            <i class="bi bi-arrow-up-circle"></i> Expenses
+        </a>
+        <a href="{% url 'income_list' %}"  class="ct-nav-item {% if 'income' in request.resolver_match.url_name and request.resolver_match.url_name != 'add_income' %}active{% endif %}">
+            <i class="bi bi-arrow-down-circle"></i> Income
+        </a>
+        <a href="{% url 'add_transaction' %}"  class="ct-nav-item {% if request.resolver_match.url_name == 'add_expense' or request.resolver_match.url_name == 'add_income' %}active{% endif %}">
+            <i class="bi bi-plus-circle-fill"></i> Add Transaction
+        </a>
+
+        <div class="ct-nav-section">Organize</div>
+        <a href="{% url 'categories' %}" class="ct-nav-item {% if request.resolver_match.url_name == 'categories' or request.resolver_match.url_name == 'tags' %}active{% endif %}">
+            <i class="bi bi-grid-3x3-gap"></i> Categories & Tags
+        </a>
+
+        <div class="ct-nav-section">Analytics</div>
+        <a href="{% url 'analytics' %}"  class="ct-nav-item {% if request.resolver_match.url_name == 'analytics' or request.resolver_match.url_name == 'reports' %}active{% endif %}">
+            <i class="bi bi-graph-up-arrow"></i> Analytics & Reports
+        </a>
+        <a href="{% url 'ai_insights' %}" class="ct-nav-item {% if request.resolver_match.url_name == 'ai_insights' %}active{% endif %}">
+            <i class="bi bi-stars"></i> AI Insights
+            <span class="ct-nav-badge">FREE</span>
+        </a>
+
+        {% if user.is_staff %}
+        <div class="ct-nav-section">Administration</div>
+        <a href="{% url 'admin_dashboard' %}" class="ct-nav-item {% if 'admin' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-shield-check"></i> Admin Panel
+        </a>
+        {% endif %}
+    </nav>
+
+    <div class="ct-sidebar-footer">
+        <a href="{% url 'profile' %}" class="ct-nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" style="margin-bottom:2px">
+            <i class="bi bi-person-circle"></i> My Profile
+        </a>
+        <a href="{% url 'logout' %}" class="ct-nav-item" style="color:#EF4444">
+            <i class="bi bi-box-arrow-left"></i> Sign Out
+        </a>
+    </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="ct-main">
+    <header class="ct-topbar">
+        <button class="d-lg-none me-1" onclick="toggleSb()" style="border:none;background:none;font-size:22px;color:var(--ct-text);padding:0;line-height:1">
+            <i class="bi bi-list"></i>
+        </button>
+        <span class="ct-page-title">{% block page_title %}Dashboard{% endblock %}</span>
+
+        <!-- Theme toggle -->
+        <button id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode"
+            style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--ct-border);background:var(--ct-card);color:var(--ct-text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px">
+            <i id="themeIco" class="bi bi-moon"></i>
+        </button>
+
+        <!-- Quick add — opens global modal -->
+        <button class="btn-ct btn-ct-primary hide-xs" style="gap:6px" onclick="openAddModal('expense')">
+            <i class="bi bi-plus"></i> Add
+        </button>
+
+        <!-- User card (static — no dropdown, profile/logout already in sidebar) -->
+        <div class="d-flex align-items-center gap-2"
+            style="border:1.5px solid var(--ct-border);border-radius:10px;padding:5px 12px;background:var(--ct-card);cursor:default">
+            <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#06B6D4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px;flex-shrink:0">
+                {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+            </div>
+            <span class="hide-xs" style="font-size:13px;font-weight:600;color:var(--ct-text)">{{ user.first_name }}</span>
+        </div>
+    </header>
+
+    <main class="ct-content">
+        <!-- Toasts -->
+        {% if messages %}
+        <div class="ct-toasts">
+            {% for msg in messages %}
+            <div class="ct-toast" style="background:{% if 'error' in msg.tags %}#EF4444{% elif 'success' in msg.tags %}#10B981{% elif 'warning' in msg.tags %}#F59E0B{% else %}#7C3AED{% endif %}">
+                {{ msg }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<!-- Mobile bottom nav -->
+<nav class="mob-nav">
+    <a href="{% url 'dashboard' %}"   class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i>Home</a>
+    <a href="{% url 'expense_list' %}" class="{% if 'expense' in request.resolver_match.url_name %}active{% endif %}"><i class="bi bi-arrow-up-circle"></i>Expenses</a>
+    <a href="{% url 'add_transaction' %}?type=income" class="{% if 'income' in request.resolver_match.url_name and request.resolver_match.url_name != 'add_income' %}active{% endif %}"><i class="bi bi-arrow-down-circle"></i>Income</a>
+    <a href="#" onclick="openAddModal('expense');return false" style="color:var(--ct-primary)"><i class="bi bi-plus-circle-fill" style="font-size:26px"></i>Add</a>
+    <a href="{% url 'analytics' %}"   class="{% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"><i class="bi bi-graph-up-arrow"></i>Analytics</a>
+    <a href="{% url 'profile' %}"     class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><i class="bi bi-person-circle"></i>Profile</a>
+</nav>
+
+{% else %}
+{% block public_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/cashtrail.js' %}"></script>
+<script>
+// Sidebar
+function toggleSb() {
+    const sb = document.getElementById('ctSb'), ov = document.getElementById('sbOverlay');
+    sb.classList.toggle('show');
+    ov.style.display = sb.classList.contains('show') ? 'block' : 'none';
+}
+function closeSb() {
+    document.getElementById('ctSb').classList.remove('show');
+    document.getElementById('sbOverlay').style.display = 'none';
+}
+// Theme
+function toggleTheme() {
+    const html = document.documentElement, dark = html.dataset.bsTheme === 'dark';
+    html.dataset.bsTheme = dark ? 'light' : 'dark';
+    document.getElementById('themeIco').className = dark ? 'bi bi-moon' : 'bi bi-sun-fill';
+    localStorage.setItem('ct-theme', html.dataset.bsTheme);
+}
+(function() {
+    const t = localStorage.getItem('ct-theme') || 'light';
+    document.documentElement.dataset.bsTheme = t;
+    const ico = document.getElementById('themeIco');
+    if (ico) ico.className = t === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon';
+})();
+// Auto-dismiss toasts
+setTimeout(() => { document.querySelectorAll('.ct-toast').forEach(t => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }); }, 4000);
+// Chart defaults
+if (typeof Chart !== 'undefined') {
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 12;
+}
+</script>
+{% block extra_js %}{% endblock %}
+
+{% if user.is_authenticated %}
+<!-- ── GLOBAL ADD TRANSACTION MODAL ── -->
+<div id="globalAddModal" style="display:none;position:fixed;inset:0;z-index:2000;overflow-y:auto">
+  <!-- Backdrop -->
+  <div onclick="closeAddModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)"></div>
+  <!-- Panel -->
+  <div style="position:relative;z-index:2001;max-width:640px;margin:40px auto;padding:0 16px">
+    <div class="ct-card overflow-hidden" style="border-radius:18px">
+      <!-- Tab bar -->
+      <div style="display:flex;gap:6px;padding:14px;background:var(--ct-surface);border-bottom:1px solid var(--ct-border)">
+        <button id="m-tabExp" onclick="modalTab('expense')" style="flex:1;padding:10px;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">
+          <i class="bi bi-arrow-up-circle-fill"></i> Expense
+        </button>
+        <button id="m-tabInc" onclick="modalTab('income')" style="flex:1;padding:10px;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;background:transparent;color:var(--ct-muted);display:flex;align-items:center;justify-content:center;gap:8px">
+          <i class="bi bi-arrow-down-circle-fill"></i> Income
+        </button>
+        <button onclick="closeAddModal()" style="width:40px;border:none;border-radius:10px;background:var(--ct-card);color:var(--ct-muted);font-size:18px;cursor:pointer;flex-shrink:0">✕</button>
+      </div>
+      <!-- Expense panel -->
+      <div id="m-expPanel" style="padding:22px">
+        <form method="post" action="{% url 'add_expense' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label">Title *</label><input type="text" name="title" class="form-control" required placeholder="e.g. Lunch at restaurant"></div>
+            <div class="col-sm-6"><label class="form-label">Amount *</label><input type="number" name="amount" class="form-control" required step="0.01" min="0" placeholder="0.00"></div>
+            <div class="col-sm-6"><label class="form-label">Date *</label><input type="date" name="date" class="form-control" id="m-expDate" required></div>
+            <div class="col-sm-6">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select">
+                <option value="">— Select —</option>
+                {% for cat in user.categories.all %}<option value="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Payment Method</label>
+              <select name="payment_method" class="form-select">
+                <option value="cash">💵 Cash</option>
+                <option value="upi">📱 UPI</option>
+                <option value="card">💳 Card</option>
+                <option value="netbanking">🏦 Net Banking</option>
+                <option value="wallet">👛 Wallet</option>
+                <option value="other">🔄 Other</option>
+              </select>
+            </div>
+            <div class="col-12"><label class="form-label">Notes (optional)</label><textarea name="notes" class="form-control" rows="2" placeholder="Any extra details…"></textarea></div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn-ct btn-ct-danger" style="flex:1">Save Expense</button>
+            <a href="{% url 'add_transaction' %}" class="btn-ct-outline" style="font-size:12.5px">Full form ↗</a>
+          </div>
+        </form>
+      </div>
+      <!-- Income panel -->
+      <div id="m-incPanel" style="padding:22px;display:none">
+        <form method="post" action="{% url 'add_income' %}">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label">Title *</label><input type="text" name="title" class="form-control" required placeholder="e.g. Monthly Salary"></div>
+            <div class="col-sm-6"><label class="form-label">Amount *</label><input type="number" name="amount" class="form-control" required step="0.01" min="0" placeholder="0.00"></div>
+            <div class="col-sm-6"><label class="form-label">Date *</label><input type="date" name="date" class="form-control" id="m-incDate" required></div>
+            <div class="col-12">
+              <label class="form-label">Source</label>
+              <select name="source" class="form-select">
+                <option value="salary">💼 Salary</option>
+                <option value="freelance">💻 Freelance</option>
+                <option value="business">🏢 Business</option>
+                <option value="investment">📈 Investment</option>
+                <option value="rental">🏠 Rental</option>
+                <option value="gift">🎁 Gift</option>
+                <option value="refund">↩️ Refund</option>
+                <option value="other">💰 Other</option>
+              </select>
+            </div>
+            <div class="col-12"><label class="form-label">Notes (optional)</label><textarea name="notes" class="form-control" rows="2" placeholder="Any extra details…"></textarea></div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn-ct btn-ct-success" style="flex:1">Save Income</button>
+            <a href="{% url 'add_transaction' %}?type=income" class="btn-ct-outline" style="font-size:12.5px">Full form ↗</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+// ── Global Add Transaction Modal ──
+function openAddModal(tab) {
+  const today = new Date().toISOString().split('T')[0];
+  const ed = document.getElementById('m-expDate');
+  const id = document.getElementById('m-incDate');
+  if (ed && !ed.value) ed.value = today;
+  if (id && !id.value) id.value = today;
+  document.getElementById('globalAddModal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  modalTab(tab || 'expense');
+}
+function closeAddModal() {
+  document.getElementById('globalAddModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function modalTab(t) {
+  const isExp = t === 'expense';
+  document.getElementById('m-expPanel').style.display = isExp ? '' : 'none';
+  document.getElementById('m-incPanel').style.display = isExp ? 'none' : '';
+  const be = document.getElementById('m-tabExp'), bi = document.getElementById('m-tabInc');
+  be.style.background = isExp ? 'linear-gradient(135deg,#7C3AED,#5B21B6)' : 'transparent';
+  be.style.color = isExp ? '#fff' : 'var(--ct-muted)';
+  bi.style.background = isExp ? 'transparent' : 'linear-gradient(135deg,#10B981,#059669)';
+  bi.style.color = isExp ? 'var(--ct-muted)' : '#fff';
+}
+// Keyboard close
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAddModal(); });
+// Check if page opened with ?modal=expense or ?modal=income
+(function() {
+  const mp = new URLSearchParams(location.search).get('modal');
+  if (mp === 'expense' || mp === 'income') { openAddModal(mp); }
+})();
+</script>
+
+</body>
+</html>

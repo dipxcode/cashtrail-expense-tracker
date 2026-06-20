@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}AI Insights{% endblock %}
+{% block page_title %}AI Insights{% endblock %}
+{% block extra_css %}
+<style>
+.ai-output { line-height: 1.85; font-size: 14px; }
+.ai-output h2 { font-size: 17px; font-weight: 700; margin: 20px 0 10px; color: var(--ct-primary); }
+.ai-output h3 { font-size: 15px; font-weight: 700; margin: 16px 0 8px; }
+.ai-output strong, .ai-output b { font-weight: 700; }
+.ai-output ul, .ai-output ol { padding-left: 20px; margin-bottom: 10px; }
+.ai-output li { margin-bottom: 5px; }
+.ai-output p  { margin-bottom: 10px; }
+.ai-output table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.ai-output table th { background: rgba(124,58,237,.07); padding: 8px 12px; text-align: left; font-weight: 700; border: 1px solid var(--ct-border); }
+.ai-output table td { padding: 8px 12px; border: 1px solid var(--ct-border); }
+.ai-output blockquote { border-left: 3px solid var(--ct-primary); padding: 8px 16px; margin: 12px 0; background: rgba(124,58,237,.04); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--ct-muted); }
+.ai-output hr { border-color: var(--ct-border); margin: 16px 0; }
+.ai-output a { color: var(--ct-primary); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+
+  <!-- Left: data snapshot -->
+  <div class="col-lg-4">
+    <div class="ct-card p-4 mb-3">
+      <h6 style="font-weight:700;margin-bottom:16px">📊 Your Data — {{ expense_data.month }}</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <div style="background:rgba(239,68,68,.07);border-radius:11px;padding:14px;text-align:center">
+            <div style="font-size:11px;color:var(--ct-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Spent</div>
+            <div class="amt-exp" style="font-size:18px;font-weight:800">{{ currency }}{{ expense_data.total_spent|floatformat:0 }}</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div style="background:rgba(16,185,129,.07);border-radius:11px;padding:14px;text-align:center">
+            <div style="font-size:11px;color:var(--ct-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Income</div>
+            <div class="amt-inc" style="font-size:18px;font-weight:800">{{ currency }}{{ expense_data.total_income|floatformat:0 }}</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:rgba(124,58,237,.07);border-radius:11px;padding:14px">
+        <div style="font-size:11px;color:var(--ct-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Savings Rate</div>
+        <div class="grad-text" style="font-size:22px;font-weight:800">{{ expense_data.savings_rate|floatformat:1 }}%</div>
+        <div class="ct-bar mt-2"><div class="ct-bar-fill" style="width:{{ expense_data.savings_rate|floatformat:0 }}%;background:var(--ct-primary);max-width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="ct-card p-4 mb-3">
+      <h6 style="font-weight:700;margin-bottom:14px">🔝 Top Spending Categories</h6>
+      {% for cat in expense_data.categories %}
+      <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:13px">
+        <span style="font-weight:600">{{ cat.name }}</span>
+        <span class="amt-exp">{{ currency }}{{ cat.amount|floatformat:0 }}</span>
+      </div>
+      {% empty %}
+      <div style="color:var(--ct-muted);font-size:13px">No category data yet</div>
+      {% endfor %}
+    </div>
+
+    <!-- API key setup card -->
+    {% if not has_groq and not has_gemini %}
+    <div class="ct-card p-4" style="border:1.5px solid rgba(124,58,237,.2);background:rgba(124,58,237,.03)">
+      <h6 style="font-weight:700;margin-bottom:10px;color:var(--ct-primary)">🤖 Enable Real AI</h6>
+      <p style="font-size:12.5px;color:var(--ct-muted);line-height:1.7;margin-bottom:12px">Add a free API key to get personalised AI analysis powered by Llama 3.3 or Gemini.</p>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px">
+        <a href="https://console.groq.com/keys" target="_blank" style="color:var(--ct-primary);font-weight:600;display:flex;align-items:center;gap:6px"><i class="bi bi-key"></i> Get Groq key (fastest, free)</a>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#10B981;font-weight:600;display:flex;align-items:center;gap:6px"><i class="bi bi-key"></i> Get Gemini key (free)</a>
+      </div>
+      <div style="margin-top:12px;padding:10px 12px;background:rgba(0,0,0,.04);border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ct-muted)">
+        Add to <strong>.env</strong>:<br>
+        GROQ_API_KEY=gsk_...
+      </div>
+    </div>
+    {% else %}
+    <div class="ct-card p-4" style="border:1.5px solid rgba(16,185,129,.2);background:rgba(16,185,129,.03)">
+      <h6 style="font-weight:700;margin-bottom:6px;color:#10B981">✅ AI Connected</h6>
+      {% if has_groq %}<div style="font-size:12.5px;color:var(--ct-muted)">🟢 Groq (Llama 3.3) active</div>{% endif %}
+      {% if has_gemini %}<div style="font-size:12.5px;color:var(--ct-muted)">🟢 Google Gemini active</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: AI panel -->
+  <div class="col-lg-8">
+    <div class="ct-card overflow-hidden">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#0F0E1A,#1E1B4B);padding:26px;color:#fff">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#7C3AED,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:22px">🤖</div>
+          <div>
+            <div style="font-size:18px;font-weight:800">AI Financial Advisor</div>
+            <div style="font-size:12.5px;opacity:.5">
+              {% if ai_provider %}{{ ai_provider }}{% elif has_groq %}Groq · Llama 3.3 70B{% elif has_gemini %}Google Gemini 1.5 Flash{% else %}Smart Demo Mode{% endif %}
+            </div>
+          </div>
+        </div>
+        <p style="color:rgba(255,255,255,.5);font-size:13.5px;margin:0;line-height:1.6">Get personalised insights based on your actual spending data. Analysis runs only when you click the button below.</p>
+      </div>
+
+      <div class="p-4">
+        {% if error %}
+        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:11px;padding:14px 16px;font-size:13px;color:#DC2626;margin-bottom:18px">
+          <strong>⚠️ API Error:</strong> {{ error }}<br>
+          <span style="font-size:12px;opacity:.8">Showing smart demo insights instead. Check your API key in .env</span>
+        </div>
+        {% endif %}
+
+        {% if not insights %}
+        <!-- Pre-generate state -->
+        <div style="text-align:center;padding:36px 20px">
+          <div style="font-size:60px;margin-bottom:16px">✨</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px">Ready for your financial analysis?</div>
+          <div style="color:var(--ct-muted);font-size:14px;margin-bottom:28px;line-height:1.6">
+            {% if has_groq or has_gemini %}
+            Real AI will analyse your actual spending and give you personalised, data-driven advice.
+            {% else %}
+            Smart demo insights will be generated based on your data patterns. Add a free API key for full AI analysis.
+            {% endif %}
+          </div>
+          <form method="post" action="{% url 'ai_insights' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-ct btn-ct-primary" id="generateBtn" style="padding:13px 36px;font-size:15px;font-weight:700">
+              🤖 Generate AI Insights
+            </button>
+          </form>
+          <div style="margin-top:14px;font-size:12px;color:var(--ct-muted)">
+            Free · Private · Your data never stored by AI providers
+          </div>
+        </div>
+        {% else %}
+        <!-- Show insights with markdown rendering -->
+        <div style="background:linear-gradient(135deg,rgba(124,58,237,.04),rgba(6,182,212,.04));border:1px solid rgba(124,58,237,.1);border-radius:14px;padding:24px;margin-bottom:18px" class="ai-output" id="aiContent">
+          {{ insights|linebreaksbr }}
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-ct btn-ct-primary"
+              onclick="this.innerHTML='<span class=spinner></span> Refreshing…';this.disabled=true">
+              <i class="bi bi-arrow-clockwise me-1"></i> Refresh Insights
+            </button>
+          </form>
+          <a href="{% url 'analytics' %}" class="btn-ct-outline"><i class="bi bi-graph-up-arrow me-1"></i>View Analytics</a>
+          <a href="{% url 'reports' %}"   class="btn-ct-outline"><i class="bi bi-file-earmark-bar-graph me-1"></i>Reports</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% if insights %}
+<script>
+// Convert markdown-like syntax to HTML for better display
+(function() {
+  const el = document.getElementById('aiContent');
+  if (!el) return;
+  let html = el.innerHTML;
+  // Bold: **text** or __text__
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  // Headers: ## and ###
+  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+  // Horizontal rule: ---
+  html = html.replace(/^---$/gm, '<hr>');
+  // Blockquote: > text
+  html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+  // Bullet list items: - item  (after linebreaksbr they are separated by <br>)
+  html = html.replace(/<br>\s*[-•]\s+/g, '</li><li>');
+  html = html.replace(/^[-•]\s+/gm, '<li>');
+  // Numbered list: 1. item
+  html = html.replace(/(\d+)\.\s+/g, '<li>');
+  // Clean up <br> around block elements
+  html = html.replace(/<br>\s*(<h[23]>)/g, '$1');
+  html = html.replace(/(<\/h[23]>)\s*<br>/g, '$1');
+  html = html.replace(/<br>\s*(<hr>)/g, '$1');
+  html = html.replace(/(<\/blockquote>)\s*<br>/g, '$1');
+  el.innerHTML = html;
+})();
+</script>
+{% endif %}
+{% endblock %}

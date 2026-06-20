@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% block title %}Analytics & Reports{% endblock %}
+{% block page_title %}Analytics & Reports{% endblock %}
+{% block content %}
+
+<!-- Tab nav -->
+<div class="d-flex gap-2 mb-4 flex-wrap align-items-center">
+  <button id="t-overview"  onclick="showTab('overview')"  class="btn-ct btn-ct-primary"  style="font-size:13px"><i class="bi bi-grid me-1"></i>Overview</button>
+  <button id="t-trends"    onclick="showTab('trends')"    class="btn-ct-outline"          style="font-size:13px"><i class="bi bi-graph-up-arrow me-1"></i>Trends</button>
+  <button id="t-breakdown" onclick="showTab('breakdown')" class="btn-ct-outline"          style="font-size:13px"><i class="bi bi-pie-chart me-1"></i>Breakdown</button>
+  <button id="t-reports"   onclick="showTab('reports')"   class="btn-ct-outline"          style="font-size:13px"><i class="bi bi-file-earmark-bar-graph me-1"></i>Reports</button>
+  <div class="ms-auto d-flex gap-2">
+    <a href="{% url 'ai_insights' %}" class="btn-ct btn-ct-cyan" style="font-size:13px"><i class="bi bi-stars me-1"></i>AI Insights</a>
+    <a href="{% url 'export_csv' %}"  class="btn-ct-outline"     style="font-size:13px"><i class="bi bi-download me-1"></i>Export CSV</a>
+  </div>
+</div>
+
+<!-- ── OVERVIEW TAB ── -->
+<div id="tab-overview">
+  <!-- 6 equal-height stat cards -->
+  <div class="row g-3 mb-4" id="statRow">
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="ct-card d-flex flex-column align-items-center justify-content-center text-center p-3" style="min-height:110px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Year Expenses</div>
+        <div class="amt-exp" style="font-size:22px;font-weight:800">{{ currency }}{{ yearly_expense|floatformat:0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="ct-card d-flex flex-column align-items-center justify-content-center text-center p-3" style="min-height:110px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Year Income</div>
+        <div class="amt-inc" style="font-size:22px;font-weight:800">{{ currency }}{{ yearly_income|floatformat:0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="ct-card d-flex flex-column align-items-center justify-content-center text-center p-3" style="min-height:110px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Year Savings</div>
+        <div style="font-size:22px;font-weight:800;color:{% if yearly_savings >= 0 %}#10B981{% else %}#EF4444{% endif %}">{{ currency }}{{ yearly_savings|floatformat:0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="ct-card d-flex flex-column align-items-center justify-content-center text-center p-3" style="min-height:110px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">This Month</div>
+        <div class="amt-exp" style="font-size:22px;font-weight:800">{{ currency }}{{ this_month_exp|floatformat:0 }}</div>
+        <div style="margin-top:5px">
+          <span class="{% if mom_change > 0 %}trend-down{% else %}trend-up{% endif %}">
+            {% if mom_change > 0 %}▲{% else %}▼{% endif %} {{ mom_change|floatformat:1 }}%
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="ct-card d-flex flex-column align-items-center justify-content-center text-center p-3" style="min-height:110px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Savings Rate</div>
+        <div class="grad-text" style="font-size:22px;font-weight:800">
+          {% if yearly_income > 0 %}{{ savings_rate|floatformat:1 }}%{% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="ct-card d-flex flex-column align-items-center justify-content-center text-center p-3" style="min-height:110px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Top Spend Day</div>
+        {% if top_days %}
+        <div style="font-size:13px;font-weight:700">{{ top_days.0.date|date:"D, M d" }}</div>
+        <div class="amt-exp" style="font-size:12.5px;margin-top:3px">{{ currency }}{{ top_days.0.total|floatformat:0 }}</div>
+        {% else %}<div style="color:var(--ct-muted);font-size:13px">No data</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview charts -->
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Monthly Income vs Expenses</h5><span style="font-size:12px;color:var(--ct-muted)">Last 12 months</span></div>
+        <div style="height:260px"><canvas id="monthlyBarChart"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Savings Trend</h5></div>
+        <div style="height:260px"><canvas id="savingsLineChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TRENDS TAB ── -->
+<div id="tab-trends" style="display:none">
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>12-Month Combined Trend</h5></div>
+        <div style="height:280px"><canvas id="fullTrendChart"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Weekly Spending Pattern</h5><span style="font-size:12px;color:var(--ct-muted)">Avg by day</span></div>
+        <div style="height:280px"><canvas id="weekRadarChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <!-- Cumulative spending line -->
+  <div class="ct-card p-4 mb-3">
+    <div class="sec-head"><h5>Cumulative Expense Growth</h5><span style="font-size:12px;color:var(--ct-muted)">Year-to-date running total</span></div>
+    <div style="height:220px"><canvas id="cumulativeChart"></canvas></div>
+  </div>
+  <!-- Top spending days table -->
+  <div class="ct-card">
+    <div class="p-4 pb-0"><div class="sec-head"><h5>Top 5 Highest Spending Days</h5></div></div>
+    <div class="table-responsive p-3">
+      <table class="ct-table w-100">
+        <thead><tr><th>Rank</th><th>Date</th><th>Day</th><th class="text-end">Total Spent</th></tr></thead>
+        <tbody>
+        {% for d in top_days %}
+        <tr>
+          <td><span style="font-size:18px">{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}<span style="font-weight:700">#{{ forloop.counter }}</span>{% endif %}</span></td>
+          <td style="font-weight:600">{{ d.date|date:"M d, Y" }}</td>
+          <td style="color:var(--ct-muted)">{{ d.date|date:"l" }}</td>
+          <td class="text-end amt-exp">{{ currency }}{{ d.total|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--ct-muted)">No spending data yet</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── BREAKDOWN TAB ── -->
+<div id="tab-breakdown" style="display:none">
+  <div class="row g-3 mb-3">
+    <div class="col-lg-5">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Category Split</h5><span style="font-size:12px;color:var(--ct-muted)">This year</span></div>
+        <div style="height:280px"><canvas id="catPolarChart"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Payment Methods</h5><span style="font-size:12px;color:var(--ct-muted)">This month</span></div>
+        <div style="height:280px"><canvas id="paymentDoughnut"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-3">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Top Categories</h5></div>
+        <div style="overflow-y:auto;max-height:280px">
+        {% for cat in category_yearly %}
+        <div class="mb-3">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span>{{ cat.category__icon|default:"💰" }}</span>
+            <span style="font-size:12.5px;font-weight:600;flex:1">{{ cat.category__name|default:"Other"|truncatechars:14 }}</span>
+            <span class="amt-exp" style="font-size:12px">{{ currency }}{{ cat.total|floatformat:0 }}</span>
+          </div>
+          <div class="ct-bar"><div class="ct-bar-fill" style="width:{{ cat.pct|default:0 }}%;background:{{ cat.category__color|default:'#7C3AED' }}"></div></div>
+        </div>
+        {% empty %}
+        <div style="color:var(--ct-muted);font-size:13px;text-align:center;padding:24px">No data yet</div>
+        {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Income source breakdown -->
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Income by Source</h5></div>
+        <div style="height:220px"><canvas id="incomeSourceChart"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="ct-card p-4">
+        <div class="sec-head"><h5>Expense vs Income Ratio</h5><span style="font-size:12px;color:var(--ct-muted)">Monthly</span></div>
+        <div style="height:220px"><canvas id="ratioChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── REPORTS TAB ── -->
+<div id="tab-reports" style="display:none">
+  {% include 'analytics/reports_inline.html' %}
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+const md  = {{ monthly_data|safe }};
+const cat = {{ category_yearly|safe }};
+const wk  = {{ week_data|safe }};
+const pm  = {{ payment_data|safe }};
+const isd = {{ income_source_data|safe }};
+const pmL = {cash:'💵 Cash',card:'💳 Card',upi:'📱 UPI',netbanking:'🏦 Net Banking',wallet:'👛 Wallet',cheque:'📄 Cheque',other:'🔄 Other'};
+
+function mkChart(id, cfg) {
+  const el = document.getElementById(id); if (!el) return;
+  return new Chart(el, cfg);
+}
+const gridColor = 'rgba(0,0,0,.04)';
+
+// Overview
+mkChart('monthlyBarChart', {
+  type:'bar',
+  data:{ labels:md.map(d=>d.month), datasets:[
+    {label:'Income',   data:md.map(d=>d.income),   backgroundColor:'rgba(16,185,129,.72)', borderRadius:5,borderSkipped:false},
+    {label:'Expenses', data:md.map(d=>d.expenses),  backgroundColor:'rgba(239,68,68,.72)',  borderRadius:5,borderSkipped:false},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{grid:{display:false}},y:{grid:{color:gridColor}}}}
+});
+
+mkChart('savingsLineChart', {
+  type:'line',
+  data:{ labels:md.map(d=>d.month), datasets:[{
+    label:'Savings', data:md.map(d=>d.savings),
+    borderColor:'#7C3AED', backgroundColor:'rgba(124,58,237,.08)',
+    fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:'#7C3AED', borderWidth:2,
+  }]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:gridColor}}}}
+});
+
+// Trends
+mkChart('fullTrendChart', {
+  type:'bar',
+  data:{ labels:md.map(d=>d.month), datasets:[
+    {label:'Income',   data:md.map(d=>d.income),   backgroundColor:'rgba(16,185,129,.72)', borderRadius:5,borderSkipped:false},
+    {label:'Expenses', data:md.map(d=>d.expenses),  backgroundColor:'rgba(239,68,68,.72)',  borderRadius:5,borderSkipped:false},
+    {label:'Savings',  data:md.map(d=>d.savings),   type:'line',borderColor:'#7C3AED',backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{grid:{display:false}},y:{grid:{color:gridColor}}}}
+});
+
+mkChart('weekRadarChart', {
+  type:'radar',
+  data:{ labels:wk.map(d=>d.day), datasets:[{
+    label:'Avg Spend', data:wk.map(d=>d.avg),
+    borderColor:'#7C3AED', backgroundColor:'rgba(124,58,237,.12)', pointBackgroundColor:'#7C3AED',borderWidth:2
+  }]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{grid:{color:'rgba(0,0,0,.05)'}}}}
+});
+
+// Cumulative
+(function(){
+  let running = 0;
+  const cumData = md.map(d=>{ running+=d.expenses; return parseFloat(running.toFixed(2)); });
+  mkChart('cumulativeChart', {
+    type:'line',
+    data:{ labels:md.map(d=>d.month), datasets:[{
+      label:'Cumulative Expenses', data:cumData,
+      borderColor:'#EF4444', backgroundColor:'rgba(239,68,68,.08)',
+      fill:true, tension:0.4, pointRadius:3, borderWidth:2,
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:gridColor}}}}
+  });
+})();
+
+// Breakdown
+if (cat.length) {
+  mkChart('catPolarChart', {
+    type:'polarArea',
+    data:{ labels:cat.map(c=>(c.category__icon||'')+(c.category__name||'N/A')),
+      datasets:[{data:cat.map(c=>parseFloat(c.total)||0), backgroundColor:cat.map(c=>(c.category__color||'#7C3AED')+'BB')}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:8}}}}
+  });
+}
+if (pm.length) {
+  mkChart('paymentDoughnut', {
+    type:'doughnut',
+    data:{ labels:pm.map(p=>pmL[p.payment_method]||p.payment_method),
+      datasets:[{data:pm.map(p=>parseFloat(p.total)||0),backgroundColor:['#7C3AED','#10B981','#EF4444','#F59E0B','#06B6D4','#8B5CF6','#6B7280'],borderWidth:0,spacing:2,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:8}}}}
+  });
+}
+if (isd.length) {
+  mkChart('incomeSourceChart', {
+    type:'bar',
+    data:{ labels:isd.map(d=>d.source), datasets:[{label:'Income',data:isd.map(d=>d.total),backgroundColor:'rgba(16,185,129,.75)',borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor}},y:{grid:{display:false}}}}
+  });
+}
+// Expense vs Income ratio
+mkChart('ratioChart', {
+  type:'line',
+  data:{ labels:md.map(d=>d.month), datasets:[
+    {label:'Exp/Inc %', data:md.map(d=>d.income>0?parseFloat((d.expenses/d.income*100).toFixed(1)):0),
+     borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.1)',fill:true,tension:0.4,pointRadius:3,borderWidth:2}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+    x:{grid:{display:false}}, y:{grid:{color:gridColor},ticks:{callback:v=>v+'%'},min:0,max:150}
+  }}
+});
+
+// Tab switching
+const tabs=['overview','trends','breakdown','reports'];
+function showTab(t) {
+  tabs.forEach(id=>{
+    document.getElementById('tab-'+id).style.display=id===t?'':'none';
+    const btn=document.getElementById('t-'+id);
+    btn.className=id===t?'btn-ct btn-ct-primary':'btn-ct-outline';
+    btn.style.fontSize='13px';
+  });
+}
+</script>
+{% endblock %}

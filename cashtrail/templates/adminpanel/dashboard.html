@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+{% block extra_css %}
+<style>
+.admin-stat { border-radius: 16px; padding: 24px; color: #fff; position: relative; overflow: hidden; }
+.admin-stat .val { font-size: 32px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+.admin-stat .lbl { font-size: 13px; opacity: 0.85; margin-bottom: 4px; font-weight: 600; }
+.admin-stat .ico { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 56px; opacity: 0.15; }
+</style>
+{% endblock %}
+{% block content %}
+<!-- Stats Row -->
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="admin-stat" style="background:linear-gradient(135deg,#6C63FF,#8B5CF6)">
+      <div class="lbl">Total Users</div>
+      <div class="val">{{ total_users }}</div>
+      <div style="font-size:12px;margin-top:6px;opacity:.8">+{{ new_users_month }} this month</div>
+      <div class="ico"><i class="bi bi-people"></i></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="admin-stat" style="background:linear-gradient(135deg,#FF6B6B,#EE5A24)">
+      <div class="lbl">Total Expenses</div>
+      <div class="val">₹{{ total_expenses|floatformat:0 }}</div>
+      <div style="font-size:12px;margin-top:6px;opacity:.8">Across all users</div>
+      <div class="ico"><i class="bi bi-arrow-up-circle"></i></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="admin-stat" style="background:linear-gradient(135deg,#00D4AA,#00B894)">
+      <div class="lbl">Total Income</div>
+      <div class="val">₹{{ total_income|floatformat:0 }}</div>
+      <div style="font-size:12px;margin-top:6px;opacity:.8">Across all users</div>
+      <div class="ico"><i class="bi bi-arrow-down-circle"></i></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="admin-stat" style="background:linear-gradient(135deg,#FFB347,#FF8C42)">
+      <div class="lbl">Total Transactions</div>
+      <div class="val">{{ total_transactions }}</div>
+      <div style="font-size:12px;margin-top:6px;opacity:.8">Expenses + Income</div>
+      <div class="ico"><i class="bi bi-receipt"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- User Growth Chart -->
+  <div class="col-lg-7">
+    <div class="ct-card p-4 h-100">
+      <h5 style="font-weight:700;margin-bottom:4px">User Growth</h5>
+      <div style="font-size:12px;color:var(--ct-text-muted);margin-bottom:20px">New registrations per month</div>
+      <div style="height:240px"><canvas id="userGrowthChart"></canvas></div>
+    </div>
+  </div>
+  <!-- Category Breakdown -->
+  <div class="col-lg-5">
+    <div class="ct-card p-4 h-100">
+      <h5 style="font-weight:700;margin-bottom:4px">Spending by Category</h5>
+      <div style="font-size:12px;color:var(--ct-text-muted);margin-bottom:16px">All users combined</div>
+      <div style="height:240px"><canvas id="catChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Recent Users -->
+  <div class="col-lg-6">
+    <div class="ct-card">
+      <div class="d-flex align-items-center justify-content-between p-4 pb-2">
+        <h5 style="font-weight:700;margin:0">Recent Users</h5>
+        <a href="{% url 'admin_users' %}" style="font-size:13px;color:var(--ct-primary);text-decoration:none;font-weight:600">View All →</a>
+      </div>
+      <div class="p-3">
+        <table class="ct-table w-100">
+          <thead><tr><th>User</th><th>Currency</th><th>Joined</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for u in recent_users %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:14px">{{ u.get_full_name|default:u.username }}</div>
+              <div style="font-size:11px;color:var(--ct-text-muted)">{{ u.email }}</div>
+            </td>
+            <td><span class="ct-badge" style="background:rgba(108,99,255,0.1);color:var(--ct-primary)">{{ u.currency }}</span></td>
+            <td style="font-size:12px;color:var(--ct-text-muted)">{{ u.date_joined|date:"M d, Y" }}</td>
+            <td>
+              {% if u.is_active %}<span class="ct-badge" style="background:rgba(0,212,170,0.1);color:#00B894">Active</span>
+              {% else %}<span class="ct-badge" style="background:rgba(255,107,107,0.1);color:#FF6B6B">Inactive</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Spenders -->
+  <div class="col-lg-3">
+    <div class="ct-card p-4 h-100">
+      <h5 style="font-weight:700;margin-bottom:16px">Top Spenders</h5>
+      {% for u in top_spenders %}
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#00D4AA);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">
+          {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.get_full_name|default:u.username }}</div>
+          <div style="font-size:12px;color:#FF6B6B;font-weight:600">₹{{ u.total_spent|floatformat:0 }}</div>
+        </div>
+      </div>
+      {% empty %}
+      <div style="color:var(--ct-text-muted);font-size:13px">No data yet</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="col-lg-3">
+    <div class="ct-card p-4 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 style="font-weight:700;margin:0">Recent Txns</h5>
+        <a href="{% url 'admin_transactions' %}" style="font-size:12px;color:var(--ct-primary);text-decoration:none;font-weight:600">All →</a>
+      </div>
+      {% for e in recent_expenses %}
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.title }}</div>
+          <div style="font-size:11px;color:var(--ct-text-muted)">{{ e.user.email|truncatechars:20 }}</div>
+        </div>
+        <span class="amount-expense" style="font-size:13px;white-space:nowrap;margin-left:8px">₹{{ e.amount }}</span>
+      </div>
+      {% empty %}
+      <div style="color:var(--ct-text-muted);font-size:13px">No transactions yet</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const growthData = {{ user_growth|safe }};
+const catData = {{ cat_breakdown|safe }};
+
+new Chart(document.getElementById('userGrowthChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: growthData.map(d => d.month),
+    datasets: [{
+      label: 'New Users',
+      data: growthData.map(d => d.count),
+      backgroundColor: 'rgba(108,99,255,0.75)',
+      borderRadius: 8, borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { stepSize: 1 } } }
+  }
+});
+
+if (catData.length > 0) {
+  new Chart(document.getElementById('catChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: catData.map(c => c.category__name || 'Uncategorized'),
+      datasets: [{
+        data: catData.map(c => parseFloat(c.total) || 0),
+        backgroundColor: catData.map(c => c.category__color || '#6C63FF'),
+        borderWidth: 0, spacing: 2, borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8 } } }
+    }
+  });
+}
+</script>
+{% endblock %}

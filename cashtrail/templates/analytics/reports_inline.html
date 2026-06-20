@@ -1,0 +1,65 @@
+<!-- Reports inline — shown inside analytics Reports tab -->
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div>
+    <span style="font-size:15px;font-weight:700">Annual Report</span>
+    <span style="font-size:12.5px;color:var(--ct-muted);margin-left:8px">{{ period_label|default:"Calendar Year" }}</span>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'reports' %}?period=calendar&year={{ year }}" class="btn-ct-outline" style="font-size:12.5px">📅 Calendar Year</a>
+    <a href="{% url 'reports' %}?period=fy&year={{ year }}" class="btn-ct-outline" style="font-size:12.5px">📊 Financial Year</a>
+    <a href="{% url 'reports' %}" class="btn-ct btn-ct-primary" style="font-size:12.5px"><i class="bi bi-box-arrow-up-right me-1"></i>Full Report Page</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="ct-card p-3 text-center">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Total Income</div>
+      <div class="amt-inc" style="font-size:22px;font-weight:800">{{ currency }}{{ total_income|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="ct-card p-3 text-center">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Total Expenses</div>
+      <div class="amt-exp" style="font-size:22px;font-weight:800">{{ currency }}{{ total_expenses|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="ct-card p-3 text-center">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:6px">Net Savings</div>
+      <div style="font-size:22px;font-weight:800;color:{% if total_savings >= 0 %}#10B981{% else %}#EF4444{% endif %}">{{ currency }}{{ total_savings|floatformat:0 }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="ct-card">
+  <div class="table-responsive">
+    <table class="ct-table w-100">
+      <thead>
+        <tr><th>Month</th><th class="text-end">Income</th><th class="text-end">Expenses</th><th class="text-end">Savings</th><th class="text-end">Rate</th></tr>
+      </thead>
+      <tbody>
+      {% for m in monthly_summary %}
+      <tr>
+        <td style="font-weight:600">{{ m.month }}</td>
+        <td class="text-end amt-inc">{% if m.income > 0 %}{{ currency }}{{ m.income|floatformat:0 }}{% else %}<span style="color:var(--ct-muted)">—</span>{% endif %}</td>
+        <td class="text-end amt-exp">{% if m.expenses > 0 %}-{{ currency }}{{ m.expenses|floatformat:0 }}{% else %}<span style="color:var(--ct-muted)">—</span>{% endif %}</td>
+        <td class="text-end" style="font-weight:700;color:{% if m.savings >= 0 %}#10B981{% else %}#EF4444{% endif %}">
+          {% if m.savings >= 0 %}+{% endif %}{{ currency }}{{ m.savings|floatformat:0 }}
+        </td>
+        <td class="text-end"><span style="font-size:12px;font-weight:600;color:{% if m.savings > 0 %}#10B981{% else %}var(--ct-muted){% endif %}">{% if m.income > 0 %}{{ m.savings|floatformat:0 }}%{% else %}—{% endif %}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="background:rgba(124,58,237,.04)">
+          <td style="padding:12px 14px;font-weight:800">TOTAL {{ year }}</td>
+          <td class="text-end" style="padding:12px 14px;font-weight:800;color:#10B981">{{ currency }}{{ total_income|floatformat:0 }}</td>
+          <td class="text-end" style="padding:12px 14px;font-weight:800;color:#EF4444">-{{ currency }}{{ total_expenses|floatformat:0 }}</td>
+          <td class="text-end" style="padding:12px 14px;font-weight:800;color:{% if total_savings >= 0 %}#10B981{% else %}#EF4444{% endif %}">{% if total_savings >= 0 %}+{% endif %}{{ currency }}{{ total_savings|floatformat:0 }}</td>
+          <td class="text-end" style="padding:12px 14px;font-weight:700;color:var(--ct-primary)">{% if total_income > 0 %}{{ total_savings|floatformat:0 }}%{% endif %}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<div class="row g-3">
+
+    <!-- LEFT: compact profile card -->
+    <div class="col-lg-3">
+        <div class="ct-card p-4 text-center mb-3">
+            <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 12px">
+                {% if user.avatar %}<img src="{{ user.avatar.url }}" style="width:72px;height:72px;border-radius:50%;object-fit:cover">
+                {% else %}{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}{% endif %}
+            </div>
+            <div style="font-size:16px;font-weight:700">{{ user.get_full_name }}</div>
+            <div style="color:var(--ct-muted);font-size:12px;margin-bottom:2px">@{{ user.username }}</div>
+            <div style="color:var(--ct-muted);font-size:12px;margin-bottom:12px">{{ user.email }}</div>
+            {% if user.is_premium %}
+            <span class="ct-badge" style="background:rgba(245,158,11,.12);color:#F59E0B">⭐ Premium</span>
+            {% else %}
+            <span class="ct-badge" style="background:rgba(124,58,237,.1);color:var(--ct-primary)">Free Plan</span>
+            {% endif %}
+        </div>
+
+        <!-- Quick stats -->
+        <div class="ct-card p-3 mb-3">
+            <div class="row g-2 text-center">
+                <div class="col-4"><div style="font-size:18px;font-weight:800;color:var(--ct-primary)">{{ user.expenses.count }}</div><div style="font-size:10.5px;color:var(--ct-muted)">Expenses</div></div>
+                <div class="col-4"><div style="font-size:18px;font-weight:800;color:#10B981">{{ user.incomes.count }}</div><div style="font-size:10.5px;color:var(--ct-muted)">Incomes</div></div>
+                <div class="col-4"><div style="font-size:18px;font-weight:800;color:#F59E0B">{{ user.categories.count }}</div><div style="font-size:10.5px;color:var(--ct-muted)">Categories</div></div>
+            </div>
+        </div>
+
+        <!-- Account meta -->
+        <div class="ct-card p-3">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ct-muted);margin-bottom:10px">Account Info</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px">
+                <div class="d-flex justify-content-between"><span style="color:var(--ct-muted)">Currency</span><span style="font-weight:600">{{ user.currency }} {{ user.get_currency_symbol }}</span></div>
+                <div class="d-flex justify-content-between"><span style="color:var(--ct-muted)">Budget</span><span style="font-weight:600">{{ user.get_currency_symbol }}{{ user.monthly_budget }}</span></div>
+                <div class="d-flex justify-content-between"><span style="color:var(--ct-muted)">Member since</span><span style="font-weight:600">{{ user.date_joined|date:"M Y" }}</span></div>
+                <div class="d-flex justify-content-between"><span style="color:var(--ct-muted)">Status</span><span class="ct-badge" style="background:rgba(16,185,129,.1);color:#10B981;font-size:10.5px">Active</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: edit form — compact two-column layout -->
+    <div class="col-lg-9">
+        <div class="ct-card p-4">
+            <div style="font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px">
+                <i class="bi bi-pencil-square" style="color:var(--ct-primary)"></i> Edit Profile
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-sm-6"><label class="form-label">First Name</label>{{ form.first_name }}</div>
+                    <div class="col-sm-6"><label class="form-label">Last Name</label>{{ form.last_name }}</div>
+                    <div class="col-sm-6"><label class="form-label">Username</label>{{ form.username }}</div>
+                    <div class="col-sm-6"><label class="form-label">Email</label>{{ form.email }}</div>
+                    <div class="col-sm-4"><label class="form-label">Phone</label>{{ form.phone }}</div>
+                    <div class="col-sm-4"><label class="form-label">Date of Birth</label>{{ form.date_of_birth }}</div>
+                    <div class="col-sm-4"><label class="form-label">Currency</label>{{ form.currency }}</div>
+                    <div class="col-sm-6"><label class="form-label">Monthly Budget</label>{{ form.monthly_budget }}</div>
+                    <div class="col-sm-6"><label class="form-label">Profile Picture</label>{{ form.avatar }}</div>
+                    <div class="col-12"><label class="form-label">Bio</label>{{ form.bio }}</div>
+                </div>
+                {% if form.errors %}
+                <div class="alert alert-danger border-0 rounded-3 mt-3 py-2" style="font-size:12.5px">
+                    {% for f, errs in form.errors.items %}{% for e in errs %}<div>• {{ f }}: {{ e }}</div>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+                <div class="d-flex gap-2 mt-3 align-items-center">
+                    <button type="submit" class="btn-ct btn-ct-primary">Save Changes</button>
+                    <a href="{% url 'dashboard' %}" class="btn-ct-outline">Cancel</a>
+                    <div class="ms-auto d-flex gap-2">
+                        <a href="{% url 'export_csv' %}" class="btn-ct-outline" style="font-size:12px"><i class="bi bi-download me-1"></i>Export Data</a>
+                        <a href="{% url 'logout' %}" class="btn-ct" style="background:linear-gradient(135deg,#EF4444,#DC2626);font-size:12px"><i class="bi bi-box-arrow-left me-1"></i>Sign Out</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

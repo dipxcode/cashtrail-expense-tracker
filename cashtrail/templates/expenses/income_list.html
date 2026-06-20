@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Income{% endblock %}
+{% block page_title %}Income{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <span style="font-size:14px;color:var(--ct-text-muted)">{{ incomes.paginator.count }} records</span>
+        <span class="ms-3 amount-income" style="font-size:16px;font-weight:700">Total: {{ currency }}{{ total|floatformat:2 }}</span>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="get" class="d-flex gap-2">
+            <select name="source" class="form-select form-select-sm" onchange="this.form.submit()" style="border-radius:10px;font-size:13px">
+                <option value="">All Sources</option>
+                {% for val, label in source_choices %}<option value="{{ val }}" {% if selected_source == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </form>
+        <a href="{% url 'add_income' %}" class="btn-ct btn-ct-success" style="font-size:13px"><i class="bi bi-plus me-1"></i>Add Income</a>
+    </div>
+</div>
+<div class="ct-card">
+    {% if incomes %}
+    <div class="table-responsive">
+        <table class="ct-table w-100">
+            <thead><tr><th>Title</th><th>Source</th><th>Date</th><th>Recurring</th><th class="text-end">Amount</th><th></th></tr></thead>
+            <tbody>
+            {% for inc in incomes %}
+            <tr>
+                <td><span style="font-weight:600">{{ inc.title }}</span>{% if inc.notes %}<div style="font-size:11px;color:var(--ct-text-muted)">{{ inc.notes|truncatechars:40 }}</div>{% endif %}</td>
+                <td><span class="ct-badge" style="background:rgba(0,212,170,0.1);color:#00B894">{{ inc.get_source_display }}</span></td>
+                <td style="color:var(--ct-text-muted);font-size:13px">{{ inc.date|date:"M d, Y" }}</td>
+                <td>{% if inc.is_recurring %}<span class="ct-badge" style="background:rgba(108,99,255,0.1);color:var(--ct-primary)">{{ inc.get_recurrence_display }}</span>{% else %}<span style="color:var(--ct-text-muted)">—</span>{% endif %}</td>
+                <td class="text-end amount-income">+{{ currency }}{{ inc.amount }}</td>
+                <td><div class="d-flex gap-1 justify-content-end">
+                    <a href="{% url 'edit_income' inc.id %}" class="btn-ct-outline" style="width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center"><i class="bi bi-pencil" style="font-size:12px"></i></a>
+                    <a href="{% url 'delete_income' inc.id %}" class="btn-ct btn-ct-danger" style="width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center"><i class="bi bi-trash" style="font-size:12px"></i></a>
+                </div></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px;color:var(--ct-text-muted)">
+        <div style="font-size:64px;margin-bottom:16px">💰</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">No income recorded</div>
+        <a href="{% url 'add_income' %}" class="btn-ct btn-ct-success">Add Income</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
